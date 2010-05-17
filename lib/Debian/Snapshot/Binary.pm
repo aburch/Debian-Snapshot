@@ -56,7 +56,7 @@ sub _as_string {
 sub download {
 	my ($self, %p) = validated_hash(\@_,
 		architecture => { isa => 'Str', },
-		archive_name => { isa => 'Str', default => 'debian', },
+		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
 		directory    => { isa => 'Str', optional => 1, },
 		filename     => { isa => 'Str', optional => 1, },
 	);
@@ -74,7 +74,7 @@ sub download {
 	), @hashes;
 	@files = grep $_->archive($p{archive_name}), @files;
 
-	my $desc = $self->_as_string . " ($p{architecture}) in '$p{archive_name}'";
+	my $desc = $self->_as_string . " ($p{architecture})";
 	die "Found no file for $desc" unless @files;
 	die "Found more than one file for $desc" if @files > 1;
 

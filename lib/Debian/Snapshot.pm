@@ -55,7 +55,10 @@ sub binaries {
 	                        ->binary($_->{name}, $_->{binary_version}),
 	                   @{ $json->{result} };
 
-	@binaries = grep $_->binary_version eq $version, @binaries if defined $version;
+	if (defined $version) {
+		$version = qr/^\Q$version\E$/ unless ref($version) eq 'Regexp';
+		@binaries = grep $_->binary_version =~ $version, @binaries;
+	}
 
 	return \@binaries;
 }
@@ -118,7 +121,8 @@ Returns an arrayref of L<Debian::Snapshot::Binary|Debian::Snapshot::Binary>
 object for the binary package named C<$name>.
 
 If the optional parameter C<$version> is present, only return binaries whose
-binary version matches C<$version>.
+binary version matches C<$version> which might be either a string or a regular
+expression.
 
 =method file($hash)
 

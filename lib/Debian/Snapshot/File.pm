@@ -30,23 +30,33 @@ has '_service' => (
 
 sub archive {
 	my ($self, $archive_name) = @_;
+
+	$archive_name = qr/^\Q$archive_name\E$/ unless ref($archive_name) eq 'Regexp';
+
 	my @archives = map $_->{archive_name}, @{ $self->_fileinfo };
-	return 0 != grep $_ eq $archive_name, @archives;
+	return 0 != grep $_ =~ $archive_name, @archives;
 }
 
 sub download {
 	my ($self, %p) = validated_hash(\@_,
-		archive_name => { isa => 'Str', default => 'debian', },
+		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
 		directory    => { isa => 'Str', optional => 1, },
-		filename     => { isa => 'Str', optional => 1, },
+		filename     => { isa => 'Str | RegexpRef', optional => 1, },
 	);
 	my $hash = $self->hash;
 
 	unless (defined $p{directory} || defined $p{filename}) {
 		die "One of 'directory', 'file' parameters must be given.";
 	}
+	if (ref($p{filename}) eq 'Regexp' && ! defined $p{directory}) {
+		die "Parameter 'directory' is required if 'filename' is a regular expression.";
+	}
 
-	my $filename = $p{filename} // $self->filename($p{archive_name});
+	my $filename = $p{filename};
+	if (ref($p{filename}) eq 'Regexp' || ! defined $filename) {
+		$filename = $self->filename($p{archive_name}, $p{filename});
+	}
+
 	if (defined $p{directory}) {
 		$filename = File::Spec->catfile($p{directory}, $filename);
 	}
@@ -57,12 +67,21 @@ sub download {
 }
 
 sub filename {
-	my ($self, $archive_name) = @_;
-	my $hash     = $self->hash;
-	my @fileinfo = grep $_->{archive_name} eq $archive_name, @{ $self->_fileinfo };
-	my @names    = map $_->{name}, @fileinfo;
+	my ($self, $archive_name, $constraint) = @_;
+	my $hash = $self->hash;
 
-	die "No filename found for file '$hash' in archive '$archive_name'" unless @names;
+	$archive_name = qr/^\Q$archive_name\E$/ unless ref($archive_name) eq 'Regexp';
+
+	my @fileinfo = grep $_->{archive_name} =~ $archive_name, @{ $self->_fileinfo };
+	my @names    = map $_->{name}, @fileinfo;
+	die "No filename found for file $hash." unless @names;
+
+	if (defined $constraint) {
+		$constraint = qr/^\Q$constraint\E_/ unless ref($constraint) eq 'Regexp';
+		@names = grep $_ =~ $constraint, @names;
+		die "No matching filename found for file $hash." unless @names;
+	}
+
 	return @names if wantarray;
 	die "More than one filename and calling function does not want a list." unless @names == 1;
 
@@ -91,7 +110,8 @@ The hash of this file.
 
 =method archive($archive_name)
 
-Check if this file belongs to the archive C<$archive_name>.
+Check if this file belongs to the archive C<$archive_name> which can either be
+a string or a regular expression.
 
 =method download(%params)
 
@@ -117,11 +137,16 @@ will be used to retrieve the filename.
 
 At least one of C<directory> and C<filename> must be given.
 
-=method filename($archive_name)
+=method filename($archive_name, $constraint?)
 
-Return the filename(s) of this file in the archive C<$archive_name>.  Will die
-if there is no known filename or several filenames were want and the method is
-called in scalar context.
+Return the filename(s) of this file in the archive C<$archive_name> (which
+might be a string or a regular expression).  Will die if there is no known
+filename or several filenames were want and the method is called in scalar
+context.
+
+If the optional parameter C<$constraint> is specified the filename must either
+start with this string followed by an underscore or match this regular
+expression.
 
 =head1 SEE ALSO
 
