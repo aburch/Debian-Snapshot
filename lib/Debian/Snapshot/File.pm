@@ -7,7 +7,6 @@ use MooseX::StrictConstructor;
 use namespace::autoclean;
 
 use File::Spec;
-use IO::File;
 
 has 'hash' => (
 	is       => 'ro',
