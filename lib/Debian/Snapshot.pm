@@ -104,6 +104,19 @@ __END__
 
 =head1 SYNOPSIS
 
+  use Debian::Snapshot;
+  my $s = Debian::Snapshot->new;
+
+  my $p = $s->package("package", "version"); # see Debian::Snapshot::Package
+  my @package_names   = @{ $s->packages };
+  my @source_versions = @{ $s->package_versions("source-package") };
+
+  my @bs = @{ $s->binaries("binary") };      # see Debian::Snapshot::Binary
+
+  my $f = $s->file($sha1hash);               # see Debian::Snapshot::File
+
+=head1 DESCRIPTION
+
 This module provides an interface to the snapshot.debian.org service.
 
 =attr url
