@@ -26,9 +26,9 @@ has '_service' => (
 	required => 1,
 );
 
-has '_srcfiles' => (
+has 'srcfiles' => (
 	is      => 'ro',
-	isa     => 'HashRef',
+	isa     => 'ArrayRef[Debian::Snapshot::File]',
 	lazy    => 1,
 	builder => '_srcfiles_builder',
 );
@@ -38,7 +38,14 @@ sub _srcfiles_builder {
 	my $package = $self->package;
 	my $version = $self->version;
 
-	$self->_service->_get_json("/mr/package/$package/$version/srcfiles?fileinfo=1");
+	my $json = $self->_service->_get_json("/mr/package/$package/$version/srcfiles?fileinfo=1");
+	my @files = map Debian::Snapshot::File->new(
+		hash      => $_->{hash},
+		_fileinfo => $json->{fileinfo}->{ $_->{hash} },
+		_service  => $self->_service,
+	), @{ $json->{result} };
+
+	return \@files;
 }
 
 sub binaries {
@@ -68,14 +75,8 @@ sub download {
 	);
 	my $package = $self->package;
 
-	my @files = map Debian::Snapshot::File->new(
-		hash      => $_->{hash},
-		_fileinfo => $self->_srcfiles->{fileinfo}->{ $_->{hash} },
-		_service  => $self->_service,
-	), @{ $self->_srcfiles->{result} };
-
 	my @local_files;
-	for (@files) {
+	for (@{ $self->srcfiles }) {
 		push @local_files, $_->download(
 			defined $p{archive_name} ? (archive_name => $p{archive_name}) : (),
 			directory => $p{directory},
@@ -98,6 +99,11 @@ Name of the source package.
 =attr version
 
 Version of the source package.
+
+=attr srcfiles
+
+Arrayref containing L<Debian::Snapshot::File|Debian::Snapshot::File> objects
+for the source files of this package.
 
 =method binaries
 
