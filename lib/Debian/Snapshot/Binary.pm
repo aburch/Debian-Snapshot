@@ -28,9 +28,9 @@ has 'package' => (
 	handles  => [qw( _service )],
 );
 
-has '_binfiles' => (
+has 'binfiles' => (
 	is       => 'ro',
-	isa      => 'HashRef',
+	isa      => 'ArrayRef[HashRef]',
 	lazy     => 1,
 	builder  => '_binfiles_builder',
 );
@@ -43,9 +43,20 @@ sub _binfiles_builder {
 	my $binpkg     = $self->name;
 	my $binversion = $self->binary_version;
 
-	return $self->_service->_get_json(
+	my $json = $self->_service->_get_json(
 		"/mr/package/$package/$version/binfiles/$binpkg/$binversion?fileinfo=1"
 	);
+
+	my @files = @{ $json->{result} };
+	for (@files) {
+		$_->{file} = Debian::Snapshot::File->new(
+			hash => $_->{hash},
+			_fileinfo => $json->{fileinfo}->{ $_->{hash} },
+			_service  => $self->_service,
+		);
+	}
+
+	return \@files;
 }
 
 sub _as_string {
@@ -65,20 +76,14 @@ sub download {
 		die "Either 'directory' or 'file' parameter is required.";
 	}
 
-	my $binfiles = $self->_binfiles;
-	my @hashes   = grep $_->{architecture} eq $p{architecture}, @{ $binfiles->{result} };
-	my @files    = map Debian::Snapshot::File->new(
-		hash      => $_->{hash},
-		_fileinfo => $binfiles->{fileinfo}->{ $_->{hash} },
-		_service  => $self->_service,
-	), @hashes;
-	@files = grep $_->archive($p{archive_name}), @files;
+	my @binfiles = grep $_->{architecture} eq $p{architecture}
+	                    && $_->{file}->archive($p{archive_name}), @{ $self->binfiles };
 
 	my $desc = $self->_as_string . " ($p{architecture})";
-	die "Found no file for $desc" unless @files;
-	die "Found more than one file for $desc" if @files > 1;
+	die "Found no file for $desc" unless @binfiles;
+	die "Found more than one file for $desc" if @binfiles > 1;
 
-	return $files[0]->download(
+	return $binfiles[0]->{file}->download(
 		archive_name => $p{archive_name},
 		defined $p{directory} ? (directory => $p{directory}) : (),
 		defined $p{filename} ? (filename => $p{filename}) : (),
@@ -102,6 +107,26 @@ Name of the binary package.
 
 A L<Debian::Snapshot::Package|Debian::Snapshot::Package> object for the
 associated source package.
+
+=attr binfiles
+
+An arrayref of hashrefs with the following keys:
+
+=over
+
+=item architecture
+
+Name of the architecture this package is for.
+
+=item hash
+
+Hash of this file.
+
+=item file
+
+A L<Debian::Snapshot::File|Debian::Snapshot::File> object for this file.
+
+=back
 
 =method download(%params)
 
