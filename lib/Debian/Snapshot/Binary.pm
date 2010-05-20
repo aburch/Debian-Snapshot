@@ -66,7 +66,7 @@ sub _as_string {
 
 sub download {
 	my ($self, %p) = validated_hash(\@_,
-		architecture => { isa => 'Str', },
+		architecture => { isa => 'Str | RegexpRef', },
 		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
 		directory    => { isa => 'Str', optional => 1, },
 		filename     => { isa => 'Str', optional => 1, },
@@ -76,12 +76,14 @@ sub download {
 		die "Either 'directory' or 'file' parameter is required.";
 	}
 
-	my @binfiles = grep $_->{architecture} eq $p{architecture}
+	my $architecture = ref($p{architecture}) eq 'Regexp' ? $p{architecture}
+	                 : qr/^\Q$p{architecture}\E$/;
+
+	my @binfiles = grep $_->{architecture} =~ $p{architecture}
 	                    && $_->{file}->archive($p{archive_name}), @{ $self->binfiles };
 
-	my $desc = $self->_as_string . " ($p{architecture})";
-	die "Found no file for $desc" unless @binfiles;
-	die "Found more than one file for $desc" if @binfiles > 1;
+	die "Found no file for " . $self->_as_string unless @binfiles;
+	die "Found more than one file for " . $self->_as_string if @binfiles > 1;
 
 	return $binfiles[0]->{file}->download(
 		archive_name => $p{archive_name},
@@ -116,7 +118,8 @@ An arrayref of hashrefs with the following keys:
 
 =item architecture
 
-Name of the architecture this package is for.
+Name of the architecture this package is for.  Can be a string or a regular
+expression.
 
 =item hash
 
