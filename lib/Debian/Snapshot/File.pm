@@ -6,6 +6,7 @@ use MooseX::Params::Validate;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
 
+use Digest::SHA1;
 use File::Spec;
 
 has 'hash' => (
@@ -36,6 +37,19 @@ sub archive {
 	return 0 != grep $_ =~ $archive_name, @archives;
 }
 
+sub _checksum {
+	my ($self, $filename) = @_;
+
+	open my $fp, "<", $filename;
+	binmode $fp;
+
+	my $sha1 = Digest::SHA1->new->addfile($fp)->hexdigest;
+
+	close $fp;
+
+	return lc($self->hash) eq lc($sha1);
+}
+
 sub download {
 	my ($self, %p) = validated_hash(\@_,
 		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
@@ -60,7 +74,10 @@ sub download {
 		$filename = File::Spec->catfile($p{directory}, $filename);
 	}
 
+	return $filename if -f $filename && $self->_checksum($filename);
+
 	$self->_service->_get("/file/$hash", ':content_file' => $filename);
+	die "Wrong checksum for '$filename' (expected " . $self->hash . ")." unless $self->_checksum($filename);
 
 	return $filename;
 }
