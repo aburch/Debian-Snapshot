@@ -72,6 +72,7 @@ sub download {
 	my ($self, %p) = validated_hash(\@_,
 		archive_name => { isa => 'Str | RegexpRef', optional => 1, },
 		directory    => { isa => 'Str', },
+		overwrite    => { isa => 'Bool', optional => 1, },
 	);
 	my $package = $self->package;
 
@@ -81,6 +82,7 @@ sub download {
 			defined $p{archive_name} ? (archive_name => $p{archive_name}) : (),
 			directory => $p{directory},
 			filename  => qr/^\Q$package\E_/,
+			exists $p{overwrite} ? (overwrite => $p{overwrite}) : (),
 		);
 	}
 
@@ -122,6 +124,8 @@ Download the source package.
 =over
 
 =item archive_name
+
+=item overwrite
 
 Passed to L<< Debian::Snapshot::File->download|Debian::Snapshot::File/"download(%params)" >>.
 

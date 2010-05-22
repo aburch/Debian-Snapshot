@@ -55,6 +55,7 @@ sub download {
 		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
 		directory    => { isa => 'Str', optional => 1, },
 		filename     => { isa => 'Str | RegexpRef', optional => 1, },
+		overwrite    => { isa => 'Bool', default => 0, },
 	);
 	my $hash = $self->hash;
 
@@ -74,7 +75,10 @@ sub download {
 		$filename = File::Spec->catfile($p{directory}, $filename);
 	}
 
-	return $filename if -f $filename && $self->_checksum($filename);
+	if (-f $filename) {
+		return $filename if $self->_checksum($filename);
+		die "$filename does already exist." unless $p{overwrite};
+	}
 
 	$self->_service->_get("/file/$hash", ':content_file' => $filename);
 	die "Wrong checksum for '$filename' (expected " . $self->hash . ")." unless $self->_checksum($filename);
@@ -148,6 +152,11 @@ The name of the directory where the file should be stored.
 
 The filename to use.  If this option is not specified the method C<filename>
 will be used to retrieve the filename.
+
+=item overwrite
+
+If true downloading will overwrite existing files if their hash differs from
+the expected value.  Defaults to false.
 
 =back
 

@@ -70,6 +70,7 @@ sub download {
 		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
 		directory    => { isa => 'Str', optional => 1, },
 		filename     => { isa => 'Str', optional => 1, },
+		overwrite    => { isa => 'Bool', optional => 1, },
 	);
 
 	unless (exists $p{directory} || exists $p{filename}) {
@@ -89,6 +90,7 @@ sub download {
 		archive_name => $p{archive_name},
 		defined $p{directory} ? (directory => $p{directory}) : (),
 		defined $p{filename} ? (filename => $p{filename}) : (),
+		exists $p{overwrite} ? (overwrite => $p{overwrite}) : (),
 	);
 }
 
@@ -147,6 +149,8 @@ Defaults to C<"debian">.
 =item directory
 
 =item filename
+
+=item overwrite
 
 Passed to L<< Debian::Snapshot::File->download|Debian::Snapshot::File/"download(%params)" >>.
 
