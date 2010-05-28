@@ -131,7 +131,7 @@ The L<LWP::UserAgent|LWP::UserAgent> object used to query the server.
 =method binaries($name, $version?)
 
 Returns an arrayref of L<Debian::Snapshot::Binary|Debian::Snapshot::Binary>
-object for the binary package named C<$name>.
+objects for the binary package named C<$name>.
 
 If the optional parameter C<$version> is present, only return binaries whose
 binary version matches C<$version> which might be either a string or a regular
