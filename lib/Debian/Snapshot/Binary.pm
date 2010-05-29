@@ -73,7 +73,7 @@ sub download {
 	my $architecture = ref($p{architecture}) eq 'Regexp' ? $p{architecture}
 	                 : qr/^\Q$p{architecture}\E$/;
 
-	my @binfiles = grep $_->{architecture} =~ $p{architecture}
+	my @binfiles = grep $_->{architecture} =~ $architecture
 	                    && $_->{file}->archive($p{archive_name}), @{ $self->binfiles };
 
 	die "Found no file for " . $self->_as_string unless @binfiles;
