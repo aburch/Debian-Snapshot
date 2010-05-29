@@ -1,10 +1,7 @@
 package Debian::Snapshot::Package;
 # ABSTRACT: information about a source package
 
-use Moose;
-use MooseX::Params::Validate;
-use MooseX::StrictConstructor;
-use namespace::autoclean;
+use Any::Moose;
 
 use Debian::Snapshot::Binary;
 
@@ -69,11 +66,7 @@ sub binary {
 }
 
 sub download {
-	my ($self, %p) = validated_hash(\@_,
-		archive_name => { isa => 'Str | RegexpRef', optional => 1, },
-		directory    => { isa => 'Str', },
-		overwrite    => { isa => 'Bool', optional => 1, },
-	);
+	my ($self, %p) = @_;
 	my $package = $self->package;
 
 	my @local_files;
@@ -89,7 +82,7 @@ sub download {
 	return \@local_files;
 }
 
-__PACKAGE__->meta->make_immutable;
+no Any::Moose;
 1;
 
 __END__

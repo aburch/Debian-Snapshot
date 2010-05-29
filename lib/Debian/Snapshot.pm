@@ -1,9 +1,7 @@
 package Debian::Snapshot;
 # ABSTRACT: interface to snapshot.debian.org
 
-use Moose;
-use MooseX::StrictConstructor;
-use namespace::autoclean;
+use Any::Moose;
 
 use Debian::Snapshot::Package;
 use JSON ();
@@ -97,7 +95,7 @@ sub package_versions {
 	return \@versions;
 }
 
-__PACKAGE__->meta->make_immutable;
+no Any::Moose;
 1;
 
 __END__

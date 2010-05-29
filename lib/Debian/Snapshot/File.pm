@@ -1,10 +1,7 @@
 package Debian::Snapshot::File;
 # ABSTRACT: information about a file
 
-use Moose;
-use MooseX::Params::Validate;
-use MooseX::StrictConstructor;
-use namespace::autoclean;
+use Any::Moose;
 
 use Digest::SHA1;
 use File::Spec;
@@ -51,13 +48,10 @@ sub _checksum {
 }
 
 sub download {
-	my ($self, %p) = validated_hash(\@_,
-		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
-		directory    => { isa => 'Str', optional => 1, },
-		filename     => { isa => 'Str | RegexpRef', optional => 1, },
-		overwrite    => { isa => 'Bool', default => 0, },
-	);
+	my ($self, %p) = @_;
 	my $hash = $self->hash;
+
+	$p{archive_name} = 'debian' unless exists $p{archive_name};
 
 	unless (defined $p{directory} || defined $p{filename}) {
 		die "One of 'directory', 'file' parameters must be given.";
@@ -119,7 +113,7 @@ sub _fileinfo_builder {
 	$self->_service->_get_json("/mr/file/$hash/info")->{result};
 }
 
-__PACKAGE__->meta->make_immutable;
+no Any::Moose;
 1;
 
 __END__

@@ -1,10 +1,7 @@
 package Debian::Snapshot::Binary;
 # ABSTRACT: information on a binary package
 
-use Moose;
-use MooseX::Params::Validate;
-use MooseX::StrictConstructor;
-use namespace::autoclean;
+use Any::Moose;
 
 use Debian::Snapshot::File;
 use File::Spec;
@@ -65,13 +62,9 @@ sub _as_string {
 }
 
 sub download {
-	my ($self, %p) = validated_hash(\@_,
-		architecture => { isa => 'Str | RegexpRef', },
-		archive_name => { isa => 'Str | RegexpRef', default => 'debian', },
-		directory    => { isa => 'Str', optional => 1, },
-		filename     => { isa => 'Str', optional => 1, },
-		overwrite    => { isa => 'Bool', optional => 1, },
-	);
+	my ($self, %p) = @_;
+
+	$p{archive_name} = 'debian' unless exists $p{archive_name};
 
 	unless (exists $p{directory} || exists $p{filename}) {
 		die "Either 'directory' or 'file' parameter is required.";
@@ -94,7 +87,7 @@ sub download {
 	);
 }
 
-__PACKAGE__->meta->make_immutable;
+no Any::Moose;
 1;
 
 __END__
