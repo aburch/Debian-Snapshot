@@ -69,12 +69,21 @@ sub download {
 	my ($self, %p) = @_;
 	my $package = $self->package;
 
+	my $ver = $self->version;
+	# filenames do not include epoch
+	$ver =~ s/^[0-9]+://;
+
+	# upstream tarball does not include Debian revision.
+	# filename has either .orig or the Debian revision followed by a dot.
+	$ver =~ s/-([a-zA-Z0-9.+~]*)$//;
+	my $rev = $1;
+
 	my @local_files;
 	for (@{ $self->srcfiles }) {
 		push @local_files, $_->download(
 			defined $p{archive_name} ? (archive_name => $p{archive_name}) : (),
 			directory => $p{directory},
-			filename  => qr/^\Q$package\E_/,
+			filename  => qr/^\Q${package}_${ver}\E(?:\.orig|-\Q$rev.\E)/,
 			exists $p{overwrite} ? (overwrite => $p{overwrite}) : (),
 		);
 	}
