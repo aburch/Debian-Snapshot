@@ -64,8 +64,6 @@ sub _as_string {
 sub download {
 	my ($self, %p) = @_;
 
-	$p{archive_name} = 'debian' unless exists $p{archive_name};
-
 	unless (exists $p{directory} || exists $p{filename}) {
 		die "Either 'directory' or 'file' parameter is required.";
 	}
@@ -73,14 +71,14 @@ sub download {
 	my $architecture = ref($p{architecture}) eq 'Regexp' ? $p{architecture}
 	                 : qr/^\Q$p{architecture}\E$/;
 
-	my @binfiles = grep $_->{architecture} =~ $architecture
-	                    && $_->{file}->archive($p{archive_name}), @{ $self->binfiles };
+	my @binfiles = grep $_->{architecture} =~ $architecture, @{ $self->binfiles };
+	@binfiles = grep $_->{file}->archive($p{archive_name}), @binfiles if exists $p{archive_name};
 
 	die "Found no file for " . $self->_as_string unless @binfiles;
 	die "Found more than one file for " . $self->_as_string if @binfiles > 1;
 
 	return $binfiles[0]->{file}->download(
-		archive_name => $p{archive_name},
+		exists $p{archive_name} ? (archive_name => $p{archive_name}) : (),
 		defined $p{directory} ? (directory => $p{directory}) : (),
 		defined $p{filename} ? (filename => $p{filename}) : (),
 		exists $p{overwrite} ? (overwrite => $p{overwrite}) : (),
@@ -136,8 +134,7 @@ A L<Debian::Snapshot::File|Debian::Snapshot::File> object for this file.
 
 =item archive_name
 
-Name of the archive to retrieve the package from.
-Defaults to C<"debian">.
+(Optional.) Name of the archive to retrieve the package from.
 
 =item directory
 

@@ -5,6 +5,7 @@ use Any::Moose;
 
 use Digest::SHA1;
 use File::Spec;
+use List::MoreUtils qw( uniq );
 
 has 'hash' => (
 	is       => 'ro',
@@ -51,8 +52,6 @@ sub download {
 	my ($self, %p) = @_;
 	my $hash = $self->hash;
 
-	$p{archive_name} = 'debian' unless exists $p{archive_name};
-
 	unless (defined $p{directory} || defined $p{filename}) {
 		die "One of 'directory', 'file' parameters must be given.";
 	}
@@ -84,10 +83,14 @@ sub filename {
 	my ($self, $archive_name, $constraint) = @_;
 	my $hash = $self->hash;
 
-	$archive_name = qr/^\Q$archive_name\E$/ unless ref($archive_name) eq 'Regexp';
+	my @fileinfo = @{ $self->_fileinfo };
 
-	my @fileinfo = grep $_->{archive_name} =~ $archive_name, @{ $self->_fileinfo };
-	my @names    = map $_->{name}, @fileinfo;
+	if (defined $archive_name) {
+		$archive_name = qr/^\Q$archive_name\E$/ unless ref($archive_name) eq 'Regexp';
+		@fileinfo = grep $_->{archive_name} =~ $archive_name, @fileinfo;
+	}
+
+	my @names    = uniq map $_->{name}, @fileinfo;
 	die "No filename found for file $hash." unless @names;
 
 	if (defined $constraint) {
@@ -135,8 +138,7 @@ Download the file from the snapshot service.
 
 =item archive_name
 
-Name of the archive used when looking for the filename.
-Defaults to C<"debian">.
+(Optional.) Name of the archive used when looking for the filename.
 
 =item directory
 
@@ -156,7 +158,7 @@ the expected value.  Defaults to false.
 
 At least one of C<directory> and C<filename> must be given.
 
-=method filename($archive_name, $constraint?)
+=method filename($archive_name?, $constraint?)
 
 Return the filename(s) of this file in the archive C<$archive_name> (which
 might be a string or a regular expression).  Will die if there is no known
